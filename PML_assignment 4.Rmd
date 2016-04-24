@@ -1,0 +1,89 @@
+---
+title: "Fitness Behaviors"
+author: "Ivan Fernandez"
+date: "April 20, 2016"
+output: pdf_document
+---
+
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways.
+
+Set directory and load data for both trainning and testing
+
+setwd("C:/Users/ivan/desktop/PML")
+
+
+##LOAD DATA
+```{r}
+traind <- read.csv("C:/USERS/ivan/desktop/PML/pmltraining.csv")
+dim(traind)
+testd <- read.csv("C:/USERS/ivan/desktop/PML/pmltesting.csv")
+dim(testd)
+```
+
+##DATA CLEANUP
+Remove NA values from Train data
+```{r}
+na <- apply(traind, 2, function(x) sum(x %in% c(NA, "")))
+na
+```
+Create new data set with cleaned data
+```{r}
+index <- which(na == 0)
+traind <- traind[,index]
+traind <- traind[,8:60]
+```
+Adjust Test data for use with model derived from new Train data
+```{r}
+testd <- testd[,index]
+testd <- testd[,8:59]
+```
+
+##Packages to be loaded (some may not be required)
+```{r}
+library(randomForest)
+library(caret)
+library(rpart.plot)
+library(rpart)
+```
+
+##Model creation
+Matrix using randomForest on our Train data set
+```{r}
+model <- randomForest(classe~., data = traind)
+pred <- predict(model, traind)
+confusionMatrix(traind$classe, pred)
+```
+As expected, the model fits extremely well our train data as this is derived from the very same data set
+
+##Model Validation on Test data
+```{r}
+testd$classe <- factor(nrow(testd))
+levels(testd$classe) <- levels(traind$classe)
+T1 <- rbind(traind[1,], testd) 
+T1 <- T1[2:21,]
+```
+
+```{r}
+pvalidation <- predict(model, traind)
+print(confusionMatrix(pvalidation, traind$classe))
+```
+
+The train data model fits quite well our test data with a cross validation accuracy of 99.5% and the out-of-sample error at 0.5%
+
+##Proposed Predective Model
+```{r}
+TestModel <- predict(model, T1)
+TestModel
+```
+
+##Sources
+Training data : https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+
+Test data: https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+Source http://groupware.les.inf.puc-rio.br/har.
+
+More @ http://groupware.les.inf.puc-rio.br/har#ixzz3TROgwbfY
+
+Velloso, E.; Bulling, A.; Gellersen, H.; Ugulino, W.; Fuks, H. Qualitative Activity Recognition of Weight Lifting Exercises. Proceedings of 4th International Conference in Cooperation with SIGCHI (Augmented Human '13) . Stuttgart, Germany: ACM SIGCHI, 2013. 
